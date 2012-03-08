@@ -751,7 +751,16 @@ class Session extends Thread implements StreamStatusListener, PacketListener
 					StreamElement query = conn.getDataFactory().createElementNode(new NSI("vCard", "vcard-temp"));
 					
 					StreamElement fullName = query.addElement("FN");
-					fullName.addText("+" + packet.getTo().getNode().toString());
+					
+					//if a telephone number  add a + to be pretty
+					if(packet.getTo().getNode().toString().matches("[0-9]+"))
+					{
+						fullName.addText("+" + packet.getTo().getNode().toString());
+					}
+					else
+					{
+						fullName.addText(packet.getTo().getNode().toString());						
+					}
 					StreamElement photo = query.addElement("PHOTO");
 					StreamElement type = photo.addElement("TYPE");
 					type.addText("image/jpeg");
