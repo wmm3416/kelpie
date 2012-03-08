@@ -36,6 +36,7 @@ import javax.sip.message.Message;
 
 import org.apache.log4j.Logger;
 import org.jabberstudio.jso.JID;
+import org.jabberstudio.jso.NSI;
 import org.jabberstudio.jso.Packet;
 import org.jabberstudio.jso.StreamElement;
 
@@ -201,7 +202,7 @@ public class CallSession
 	
 	public void parseInitiate(Packet p)
 	{
-		StreamElement session = p.getFirstElement();
+		StreamElement session = p.getFirstElement(new NSI("session", "http://www.google.com/session"));
 		
 		jabberSessionId = session.getID();
 		jabberRemote = p.getFrom();
