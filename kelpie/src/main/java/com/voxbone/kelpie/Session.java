@@ -587,9 +587,9 @@ class Session extends Thread implements StreamStatusListener, PacketListener
 				}
 				
 				else if (   packet.getAttributeValue("type").equals("set")
-				         && packet.getFirstElement().getNSI().equals(new NSI("session", "http://www.google.com/session")))
+				         && packet.getFirstElement(new NSI("session", "http://www.google.com/session")) != null)
 				{
-					if (packet.getFirstElement().getAttributeValue("type").equals("initiate"))
+					if (packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getAttributeValue("type").equals("initiate"))
 					{
 						logger.debug("[[" + internalCallId + "]] Got a request to start a call");
 						Session sess = SessionManager.findCreateSession(packet.getTo().getDomain(), packet.getFrom());
@@ -612,13 +612,13 @@ class Session extends Thread implements StreamStatusListener, PacketListener
 						}
 						SipService.sendInvite(cs, domain);
 					}
-					else if (packet.getFirstElement().getAttributeValue("type").equals("transport-info"))
+					else if (packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getAttributeValue("type").equals("transport-info"))
 					{
 						logger.debug("[[" + internalCallId + "]] Got transport info");
 						Session sess = SessionManager.findCreateSession(packet.getTo().getDomain(), packet.getFrom());
 						sess.ackIQ(packet);
 						
-						StreamElement origTransport = packet.getFirstElement().getFirstElement("transport");
+						StreamElement origTransport = packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getFirstElement("transport");
 						
 						if (origTransport.getNamespaceURI().equals("http://www.google.com/transport/p2p"))
 						{
@@ -626,7 +626,7 @@ class Session extends Thread implements StreamStatusListener, PacketListener
 							if (   candidate != null
 							    && candidate.getAttributeValue("protocol").equals("udp"))
 							{
-								String sessionId = packet.getFirstElement().getID();
+								String sessionId = packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getID();
 								
 								CallSession cs = CallManager.getSession(sessionId);
 								
@@ -645,18 +645,18 @@ class Session extends Thread implements StreamStatusListener, PacketListener
 							}
 						}
 					}
-					else if (packet.getFirstElement().getAttributeValue("type").equals("candidates"))
+					else if (packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getAttributeValue("type").equals("candidates"))
 					{
 						logger.debug("[[" + internalCallId + "]] Got candidate");
 						Session sess = SessionManager.findCreateSession(packet.getTo().getDomain(), packet.getFrom());
 						sess.ackIQ(packet);
 						
-						/*StreamElement origTransport = */packet.getFirstElement().getFirstElement("transport");
-						StreamElement candidate = packet.getFirstElement().getFirstElement("candidate");
+						/*StreamElement origTransport = */packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getFirstElement("transport");
+						StreamElement candidate = packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getFirstElement("candidate");
 						if (   candidate != null
 						    && candidate.getAttributeValue("protocol").equals("udp"))
 						{
-							String sessionId = packet.getFirstElement().getID();
+							String sessionId = packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getID();
 
 							CallSession cs = CallManager.getSession(sessionId);
 
@@ -703,18 +703,18 @@ class Session extends Thread implements StreamStatusListener, PacketListener
 							}
 						}
 					}
-					else if (packet.getFirstElement().getAttributeValue("type").equals("transport-accept"))
+					else if (packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getAttributeValue("type").equals("transport-accept"))
 					{
 						logger.debug("[[" + internalCallId + "]] Got transport accept");
 						Session sess = SessionManager.findCreateSession(packet.getTo().getDomain(), packet.getFrom());
 						sess.ackIQ(packet);
 					}
-					else if (packet.getFirstElement().getAttributeValue("type").equals("accept"))
+					else if (packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getAttributeValue("type").equals("accept"))
 					{
 						logger.debug("[[" + internalCallId + "]] Got transport accept");
 						Session sess = SessionManager.findCreateSession(packet.getTo().getDomain(), packet.getFrom());
 						sess.ackIQ(packet);						
-						CallSession cs = CallManager.getSession(packet.getFirstElement().getID());
+						CallSession cs = CallManager.getSession(packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getID());
 						if (cs != null)
 						{
 							logger.debug("[[" + internalCallId + "]] got call session : [[" + cs.internalCallId + "]]");
@@ -723,10 +723,10 @@ class Session extends Thread implements StreamStatusListener, PacketListener
 							SipService.acceptCall(cs);
 						}
 					}
-					else if (packet.getFirstElement().getAttributeValue("type").equals("terminate"))
+					else if (packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getAttributeValue("type").equals("terminate"))
 					{
 						logger.debug("[[" + internalCallId + "]] Got a terminate");
-						String sessionId = packet.getFirstElement().getID();
+						String sessionId = packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getID();
 						CallSession cs = CallManager.getSession(sessionId);
 						if (cs != null)
 						{
