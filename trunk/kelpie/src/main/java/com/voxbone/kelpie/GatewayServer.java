@@ -131,7 +131,7 @@ public class GatewayServer
 			{
 				// ignore
  			}
-			UriMappings.initalize();
+			UriMappings.initialize();
 		}
 	}
 	

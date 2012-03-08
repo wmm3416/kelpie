@@ -52,9 +52,10 @@ public class UriMappings
 	
 	public static void configure(Properties properties) {
 		fakeId = properties.getProperty("com.voxbone.kelpie.service_name", "kelpie");
+		buildMap(properties);
 	}
 	
-	public static void initalize()
+	public static void initialize()
 	{
 		for (Mapping m : mappings)
 		{
