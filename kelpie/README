@@ -1,6 +1,6 @@
 Kelpie is a SIP to XMPP gateway
 
-It attempts to make sip endpints apper as xmpp endpoints and vice-versa
+It attempts to make sip endpoints appear as xmpp endpoints and vice-versa
 
 
 The gateway only focuses on protocol translation, a SIP proxy (such as Kamailio) and a federated xmpp server are required for routing.
@@ -19,3 +19,7 @@ The sip proxy should identify that user is actually an xmpp endpoint and forward
 example:
 com.voxbone.kelpie.mapping.user=user@jabber.org
 would mapp sent to sip:user@{kelpie.hostname} to user@jabber.org
+
+
+if you don't want to use the mapping file, the format
+sip:user+xmpp-server@{kelpie.hostname} can also be used instead
