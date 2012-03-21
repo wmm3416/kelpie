@@ -170,16 +170,14 @@ public class CallSession
 		return null;
 	}
 	
-	public Payload getByName(String name, int width, int height)
+	public Payload getByName(String name)
 	{
 		for (Payload p : supported)
 		{
 			if (p instanceof VPayload)
 			{
 				VPayload vp = (VPayload) p;
-				if (   p.name.equalsIgnoreCase(name) 
-				    && vp.width == width
-				    && vp.height == height)
+				if (p.name.equalsIgnoreCase(name))
 				{
 					return vp;
 				}
@@ -252,7 +250,7 @@ public class CallSession
 					int height = Integer.parseInt(pt.getAttributeValue("height"));
 					//int framerate = Integer.parseInt(pt.getAttributeValue("framerate"));
 					
-					Payload p = getByName(name, width, height);
+					Payload p = getByName(name);
 					if (p != null && p instanceof VPayload)
 					{
 						VPayload tmp = (VPayload) p;
