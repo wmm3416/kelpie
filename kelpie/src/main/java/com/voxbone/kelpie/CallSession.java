@@ -55,7 +55,8 @@ public class CallSession
 	public static Payload PAYLOAD_SPEEX2 = new Payload(98, "speex", 8000, 11000);
 	public static Payload PAYLOAD_PCMU = new Payload(0, "PCMU", 8000, 64000);
 	public static Payload PAYLOAD_PCMA = new Payload(8, "PCMA", 8000, 64000);
-	public static Payload PAYLOAD_G723 = new Payload(8, "G723", 8000, 6300);
+	public static Payload PAYLOAD_G723 = new Payload(4, "G723", 8000, 6300);
+	public static VPayload PAYLOAD_H263 = new VPayload(34, "H263", 90000, 512000, 320, 200, 30);
 	public static VPayload PAYLOAD_H264 = new VPayload(97, "H264", 90000, 512000, 320, 200, 30);
 	public static VPayload PAYLOAD_H264SVC = new VPayload(96, "H264-SVC", 90000, 512000, 320, 200, 30);
 	
@@ -68,6 +69,7 @@ public class CallSession
 		supported.add(PAYLOAD_PCMA);		
 		supported.add(PAYLOAD_G723);
 		supported.add(PAYLOAD_H264);
+		supported.add(PAYLOAD_H263);
 		supported.add(PAYLOAD_H264SVC);
 	}
 	
