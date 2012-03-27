@@ -256,7 +256,6 @@ public class RtpRelay extends Thread
 	private SocketAddress jabberDestRtcp;
 	private SocketAddress sipDest;
 	private SocketAddress sipDestRtcp;
-
 	
 	byte [] sipSSRC = null;
 	byte [] jabberSSRC = null;
