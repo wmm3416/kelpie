@@ -33,6 +33,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.Properties;
 
 import org.apache.log4j.Logger;
 import org.jabberstudio.jso.Packet;
@@ -59,6 +60,11 @@ import de.javawi.jstun.util.UtilityException;
 
 public class RtpRelay extends Thread
 {
+	// global variables
+	private static int RTP_MIN_PORT;
+	private static int RTP_MAX_PORT;
+	
+	private static int nextPort = RTP_MIN_PORT;
 	
 	Timer retransTimer = new Timer("Stun Retransmit Thread");
 	
@@ -262,10 +268,8 @@ public class RtpRelay extends Thread
 	int firSeq = 0;
 		
 	Logger logger = Logger.getLogger(this.getClass());
-	public static final int RTP_MIN_PORT = 8000;
-	public static final int RTP_MAX_PORT = 10000;
 	
-	private static int nextPort = RTP_MIN_PORT;
+
 	private CallSession cs = null;
 	
 	private DatagramChannel makeDatagramChannel(boolean any) throws IOException
@@ -815,5 +819,13 @@ public class RtpRelay extends Thread
 		{
 			logger.error("Error in rtcp shutdown", e);
 		}
+	}
+
+	public static void configure(Properties properties)
+	{
+		RTP_MIN_PORT = Integer.parseInt(properties.getProperty("com.voxbone.kelpie.rtp.min_port", "8000"));
+		RTP_MAX_PORT = Integer.parseInt(properties.getProperty("com.voxbone.kelpie.rtp.max_port", "10000"));
+		
+		nextPort = RTP_MIN_PORT;		
 	}
 }
