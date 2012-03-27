@@ -66,6 +66,8 @@ public class RtpRelay extends Thread
 	
 	private static int nextPort = RTP_MIN_PORT;
 	
+	private static boolean NAT_ENABLE = false;
+	
 	Timer retransTimer = new Timer("Stun Retransmit Thread");
 	
 	private class StunTransmitter extends TimerTask
@@ -623,6 +625,10 @@ public class RtpRelay extends Thread
 
 								if (socket == sipSocket)
 								{
+									if(NAT_ENABLE && !src.equals(sipDest))
+									{
+										sipDest = src;
+									}
 									destSocket = jabberSocket;
 									destAddr = jabberDest;
 									
@@ -640,6 +646,11 @@ public class RtpRelay extends Thread
 								{
 									destSocket = jabberSocketRtcp;
 									destAddr = jabberDestRtcp;
+
+									if(NAT_ENABLE && !src.equals(sipDestRtcp))
+									{
+										sipDestRtcp = src;
+									}
 									
 									if (destSocket != null && destAddr != null)
 									{
@@ -825,6 +836,7 @@ public class RtpRelay extends Thread
 	{
 		RTP_MIN_PORT = Integer.parseInt(properties.getProperty("com.voxbone.kelpie.rtp.min_port", "8000"));
 		RTP_MAX_PORT = Integer.parseInt(properties.getProperty("com.voxbone.kelpie.rtp.max_port", "10000"));
+		NAT_ENABLE = Boolean.parseBoolean(properties.getProperty("com.voxbone.kelpie.rtp.nat_enable", "false"));
 		
 		nextPort = RTP_MIN_PORT;		
 	}
