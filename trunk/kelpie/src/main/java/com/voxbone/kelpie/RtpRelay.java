@@ -627,6 +627,7 @@ public class RtpRelay extends Thread
 								{
 									if(NAT_ENABLE && !src.equals(sipDest))
 									{
+										logger.debug("Nat detected, updating sip rtp destination from " + sipDest + " to " + src);
 										sipDest = src;
 									}
 									destSocket = jabberSocket;
@@ -649,6 +650,7 @@ public class RtpRelay extends Thread
 
 									if(NAT_ENABLE && !src.equals(sipDestRtcp))
 									{
+										logger.debug("Nat detected, updating sip rtcp destination from " + sipDestRtcp + " to " + src);
 										sipDestRtcp = src;
 									}
 									
