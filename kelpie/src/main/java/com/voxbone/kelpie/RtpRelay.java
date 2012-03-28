@@ -702,14 +702,16 @@ public class RtpRelay extends Thread
 											{
 												// TODO: google uses H264 SVC, the rest of the world uses AVC, so convert
 												// google now supports AVC so we should adapt to that
+/*
 												
 												int length = RtpUtil.filterSVC(inputBuffer.array(), outputBytes, inputBuffer.remaining());
 												outputBuffer.clear();
 												outputBuffer.put(outputBytes, 0, length);
 												outputBuffer.flip();
+*/
 												if (destSocket.isOpen())
 												{
-													destSocket.send(outputBuffer, destAddr);
+													destSocket.send(inputBuffer, destAddr);
 												}
 											}
 										}
