@@ -1,5 +1,7 @@
 Kelpie is a SIP to XMPP gateway
 
+latest source can be found at http://www.javaforge.com/project/kelpie
+
 It attempts to make sip endpoints appear as xmpp endpoints and vice-versa
 
 
@@ -23,3 +25,5 @@ would map sent to sip:user@{kelpie.hostname} to user@jabber.org
 
 if you don't want to use the mapping file, the format
 sip:user+xmpp-server@{kelpie.hostname} can also be used instead
+
+note: gtalk doesn't accept calls from bare JIDs, in order to sucessfully call gtalk users, you must define a mapping
