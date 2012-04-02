@@ -732,9 +732,24 @@ class Session extends Thread implements StreamStatusListener, PacketListener
 						{
 							logger.debug("[[" + internalCallId + "]] got call session : [[" + cs.internalCallId + "]]");
 							logger.debug("[[" + internalCallId + "]] found call session, forwarding bye");
-							CallManager.removeSession(cs);
 							SipService.sendBye(cs);
+							CallManager.removeSession(cs);
 						}
+					}
+
+					else if (packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getAttributeValue("type").equals("reject"))
+					{
+						logger.debug("[[" + internalCallId + "]] Got a reject");
+						String sessionId = packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getID();
+						CallSession cs = CallManager.getSession(sessionId);						
+						if (cs != null)
+						{
+							logger.debug("[[" + internalCallId + "]] got call session : [[" + cs.internalCallId + "]]");
+							logger.debug("[[" + internalCallId + "]] found call session, forwarding reject");
+							SipService.sendReject(cs);
+							CallManager.removeSession(cs);
+						}
+
 					}
 				}
 				else if (   packet.getAttributeValue("type").equals("get")
@@ -1208,7 +1223,7 @@ class Session extends Thread implements StreamStatusListener, PacketListener
 		p.setTo(to);
 		
 		StreamElement caps = conn.getDataFactory().createElementNode(new NSI("c", "http://jabber.org/protocol/caps"));
-		caps.setAttributeValue("ext", "voice-v1 video-v1");
+		caps.setAttributeValue("ext", "voice-v1 video-v1 camera-v1");
 		caps.setAttributeValue("node", clientName);
 		caps.setAttributeValue("ver", clientVersion);
 		p.add(caps);
