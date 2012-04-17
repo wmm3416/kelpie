@@ -652,53 +652,58 @@ class Session extends Thread implements StreamStatusListener, PacketListener
 						sess.ackIQ(packet);
 						
 						/*StreamElement origTransport = */packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getFirstElement("transport");
-						StreamElement candidate = packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getFirstElement("candidate");
-						if (   candidate != null
-						    && candidate.getAttributeValue("protocol").equals("udp"))
+						StreamElement session = packet.getFirstElement(new NSI("session", "http://www.google.com/session"));
+						for(Object objCandidate : session.listElements("candidate"))
 						{
-							String sessionId = packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getID();
+							StreamElement candidate = (StreamElement)objCandidate;
 
-							CallSession cs = CallManager.getSession(sessionId);
-
-							if (cs != null)
+							if (   candidate != null
+									&& candidate.getAttributeValue("protocol").equals("udp"))
 							{
-								logger.debug("[[" + internalCallId + "]] got call session : [[" + cs.internalCallId + "]]");
+								String sessionId = session.getID();
 
-								if (candidate.getAttributeValue("name").equals("video_rtp")/* || candidate.getAttributeValue("name").equals("video_rtcp")*/)
+								CallSession cs = CallManager.getSession(sessionId);
+
+								if (cs != null)
 								{
-									if (!cs.sentVTransport)
-									{
-										sess.sendTransportCandidates(cs, StreamType.VRTP);
-									}
+									logger.debug("[[" + internalCallId + "]] got call session : [[" + cs.internalCallId + "]]");
 
-									cs.vRelay.sendBind(candidate.getAttributeValue("username"), cs.candidateVUser, candidate.getAttributeValue("address"), Integer.parseInt(candidate.getAttributeValue("port")), packet, false);
-								}
-								else if (candidate.getAttributeValue("name").equals("video_rtcp"))
-								{
-									if (!cs.sentVTransport)
+									if (candidate.getAttributeValue("name").equals("video_rtp")/* || candidate.getAttributeValue("name").equals("video_rtcp")*/)
 									{
-										sess.sendTransportCandidates(cs, StreamType.VRTCP);
-									}
+										if (!cs.sentVTransport)
+										{
+											sess.sendTransportCandidates(cs, StreamType.VRTP);
+										}
 
-									cs.vRelay.sendBind(candidate.getAttributeValue("username"), cs.candidateVUser, candidate.getAttributeValue("address"), Integer.parseInt(candidate.getAttributeValue("port")), packet, true);
-								}
-								else if (candidate.getAttributeValue("name").equals("rtp")/* || candidate.getAttributeValue("name").equals("rtcp")*/)
-								{
-									if (!cs.sentTransport)
+										cs.vRelay.sendBind(candidate.getAttributeValue("username"), cs.candidateVUser, candidate.getAttributeValue("address"), Integer.parseInt(candidate.getAttributeValue("port")), packet, false);
+									}
+									else if (candidate.getAttributeValue("name").equals("video_rtcp"))
 									{
-										sess.sendTransportCandidates(cs, StreamType.RTP);
-									}
+										if (!cs.sentVTransport)
+										{
+											sess.sendTransportCandidates(cs, StreamType.VRTCP);
+										}
 
-									cs.relay.sendBind(candidate.getAttributeValue("username"), cs.candidateUser, candidate.getAttributeValue("address"), Integer.parseInt(candidate.getAttributeValue("port")), packet, false);
-								}
-								else if (candidate.getAttributeValue("name").equals("rtcp"))
-								{
-									if (!cs.sentTransport)
+										cs.vRelay.sendBind(candidate.getAttributeValue("username"), cs.candidateVUser, candidate.getAttributeValue("address"), Integer.parseInt(candidate.getAttributeValue("port")), packet, true);
+									}
+									else if (candidate.getAttributeValue("name").equals("rtp")/* || candidate.getAttributeValue("name").equals("rtcp")*/)
 									{
-										sess.sendTransportCandidates(cs, StreamType.RTCP);										
-									}
+										if (!cs.sentTransport)
+										{
+											sess.sendTransportCandidates(cs, StreamType.RTP);
+										}
 
-									cs.relay.sendBind(candidate.getAttributeValue("username"), cs.candidateUser, candidate.getAttributeValue("address"), Integer.parseInt(candidate.getAttributeValue("port")), packet, true);
+										cs.relay.sendBind(candidate.getAttributeValue("username"), cs.candidateUser, candidate.getAttributeValue("address"), Integer.parseInt(candidate.getAttributeValue("port")), packet, false);
+									}
+									else if (candidate.getAttributeValue("name").equals("rtcp"))
+									{
+										if (!cs.sentTransport)
+										{
+											sess.sendTransportCandidates(cs, StreamType.RTCP);										
+										}
+
+										cs.relay.sendBind(candidate.getAttributeValue("username"), cs.candidateUser, candidate.getAttributeValue("address"), Integer.parseInt(candidate.getAttributeValue("port")), packet, true);
+									}
 								}
 							}
 						}
