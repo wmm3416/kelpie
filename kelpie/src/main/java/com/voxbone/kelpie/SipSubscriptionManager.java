@@ -294,18 +294,34 @@ public class SipSubscriptionManager
 	
 	public static void deleteSubscription(SipSubscription sub)
 	{
-		String filename = spoolPath + "/subscriptions/" + ((SipURI) sub.localParty.getURI()).getUser() + "_" + sub.callId;
-		
-		File file = new File(filename);
-		file.delete();
+		try 
+		{
+			String filename = spoolPath + "/subscriptions/" + ((SipURI) sub.localParty.getURI()).getUser() + "_" + sub.callId;
+
+			File file = new File(filename);
+			file.delete();
+		} 
+		catch(Exception e) 
+		{
+			logger.error("Error deleting!", e);
+		}
+
 	}
 	
 	public static void deleteWatcher(SipSubscription sub)
 	{
-		String filename = spoolPath + "/watchers/" + ((SipURI) sub.localParty.getURI()).getUser() + "_" + sub.callId;
-		
-		File file = new File(filename);
-		file.delete();
+		try 
+		{
+			String filename = spoolPath + "/watchers/" + ((SipURI) sub.localParty.getURI()).getUser() + "_" + sub.callId;
+
+			File file = new File(filename);
+			file.delete();
+		} 
+		catch(Exception e) 
+		{
+			logger.error("Error deleting!", e);
+		}
+
 	}
 	
 	public static void loadData()
