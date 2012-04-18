@@ -369,8 +369,8 @@ public class RtpRelay extends Thread
 		this.video = video;
 		this.cs = cs;
 		
-		jabberSocket = makeDatagramChannel(true);
-		jabberSocketRtcp = makeDatagramChannel(true);
+		jabberSocket = makeDatagramChannel(false);
+		jabberSocketRtcp = makeDatagramChannel(false);
 
 		sipSocket = makeDatagramChannel(false);
 		sipSocketRtcp = makeDatagramChannel(false);
