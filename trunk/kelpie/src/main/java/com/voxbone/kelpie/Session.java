@@ -585,30 +585,33 @@ class Session extends Thread implements StreamStatusListener, PacketListener
 					Session sess = SessionManager.findCreateSession(packet.getTo().getDomain(), packet.getFrom());
 					sess.sendPacket(p);
 				}
-                else if ( packet.getAttributeValue("type").equals("error"))
-                {
-                       logger.debug("[[" + internalCallId + "]] Got error stanza");
+				else if ( packet.getAttributeValue("type").equals("error"))
+				{
+					logger.debug("[[" + internalCallId + "]] Got error stanza");
 
-                               StreamElement error = packet.getFirstElement("error");
-                                       if ( error != null )
-                                       {
-                                               logger.debug("[[" + internalCallId + "]] Error code: " + error.getAttributeValue("code") + " type: " + error.getAttributeValue("type") );
-                                               if (error.getAttributeValue("type") == "cancel")
-                                               {
-                                                       logger.debug("[[" + internalCallId + "]] Forwarding cancel to SIP..." );
-                                                       String sessionId = packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getID();
-                                                       CallSession cs = CallManager.getSession(sessionId);
-                                                       if (cs != null) {
-                                                       SipService.sendReject(cs);
-                                                       logger.debug("[[" + internalCallId + "]] Removing session... " );
-                                                       CallManager.removeSession(cs);
-                                                       }
-                                               } else {
-                                                       logger.debug("[[" + internalCallId + "]] Ignoring error... ");
-                                               }
-                                       }
+					StreamElement error = packet.getFirstElement("error");
+					if ( error != null )
+					{
+						logger.debug("[[" + internalCallId + "]] Error code: " + error.getAttributeValue("code") + " type: " + error.getAttributeValue("type") );
+						if (error.getAttributeValue("type") == "cancel")
+						{
+							logger.debug("[[" + internalCallId + "]] Forwarding cancel to SIP..." );
+							String sessionId = packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getID();
+							CallSession cs = CallManager.getSession(sessionId);
+							if (cs != null) 
+							{
+								SipService.sendReject(cs);
+								logger.debug("[[" + internalCallId + "]] Removing session... " );
+								CallManager.removeSession(cs);
+							}
+						} 
+						else 
+						{
+							logger.debug("[[" + internalCallId + "]] Ignoring error... ");
+						}
+					}
 
-                }				
+				}				
 				else if (   packet.getAttributeValue("type").equals("set")
 				         && packet.getFirstElement(new NSI("session", "http://www.google.com/session")) != null)
 				{
