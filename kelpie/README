@@ -1,6 +1,6 @@
 Kelpie is a SIP to XMPP gateway
 
-latest source can be found at http://www.javaforge.com/project/kelpie
+latest source can be found at http://code.google.com/p/kelpie/
 
 It attempts to make sip endpoints appear as xmpp endpoints and vice-versa
 
