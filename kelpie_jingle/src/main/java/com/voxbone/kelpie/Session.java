@@ -264,7 +264,85 @@ class Session extends Thread implements StreamStatusListener, PacketListener
 		
 		return running;
 	}
-	
+
+	private void handleInitate(Packet packet, boolean jingle) throws StreamException
+	{
+		logger.debug("[[" + internalCallId + "]] Got a request to start a call");
+		Session sess = SessionManager.findCreateSession(packet.getTo().getDomain(), packet.getFrom());
+		sess.ackIQ(packet);
+		
+		CallSession cs = new CallSession();
+		logger.debug("[[" + internalCallId + "]] created call session : [[" + cs.internalCallId + "]]");
+		cs.parseInitiate(packet, jingle);
+		
+		CallManager.addSession(cs);
+		
+		/* For coherence, we try to use the domain he has used in his subscription */
+		String domain = host;
+
+		SipSubscription sub = SipSubscriptionManager.getWatcher(UriMappings.toSipId(cs.jabberRemote), cs.jabberLocal.getNode());
+		
+		if (sub != null)
+		{
+			domain = ((SipURI) sub.remoteParty.getURI()).getHost();
+		}
+		SipService.sendInvite(cs, domain);
+	}
+	private void handleTransportList(Session sess, StreamElement session, CallSession cs)
+	{
+		for(Object objCandidate : session.listElements("candidate"))
+		{
+			StreamElement candidate = (StreamElement)objCandidate;
+
+			if (   candidate != null
+					&& candidate.getAttributeValue("protocol").equals("udp"))
+			{
+
+				if (cs != null)
+				{
+					logger.debug("[[" + internalCallId + "]] got call session : [[" + cs.internalCallId + "]]");
+
+					if (candidate.getAttributeValue("name").equals("video_rtp")/* || candidate.getAttributeValue("name").equals("video_rtcp")*/)
+					{
+						if (!cs.sentVTransport)
+						{
+							sess.sendTransportCandidates(cs, StreamType.VRTP);
+						}
+
+						cs.vRelay.sendBind(candidate.getAttributeValue("username"), cs.candidateVUser, candidate.getAttributeValue("address"), Integer.parseInt(candidate.getAttributeValue("port")), false);
+					}
+					else if (candidate.getAttributeValue("name").equals("video_rtcp"))
+					{
+						if (!cs.sentVTransport)
+						{
+							sess.sendTransportCandidates(cs, StreamType.VRTCP);
+						}
+
+						cs.vRelay.sendBind(candidate.getAttributeValue("username"), cs.candidateVUser, candidate.getAttributeValue("address"), Integer.parseInt(candidate.getAttributeValue("port")), true);
+					}
+					else if (candidate.getAttributeValue("name").equals("rtp")/* || candidate.getAttributeValue("name").equals("rtcp")*/)
+					{
+						if (!cs.sentTransport)
+						{
+							sess.sendTransportCandidates(cs, StreamType.RTP);
+						}
+
+						cs.relay.sendBind(candidate.getAttributeValue("username"), cs.candidateUser, candidate.getAttributeValue("address"), Integer.parseInt(candidate.getAttributeValue("port")), false);
+					}
+					else if (candidate.getAttributeValue("name").equals("rtcp"))
+					{
+						if (!cs.sentTransport)
+						{
+							sess.sendTransportCandidates(cs, StreamType.RTCP);										
+						}
+
+						cs.relay.sendBind(candidate.getAttributeValue("username"), cs.candidateUser, candidate.getAttributeValue("address"), Integer.parseInt(candidate.getAttributeValue("port")), true);
+					}
+				}
+			}
+		}
+
+	}
 	public void packetTransferred(PacketEvent evt)
 	{
 		try
@@ -612,64 +690,70 @@ class Session extends Thread implements StreamStatusListener, PacketListener
 					}
 
 				}				
+				// jingle call
+				else if (   packet.getAttributeValue("type").equals("set")
+				         && packet.getFirstElement(new NSI("jingle", "urn:xmpp:jingle:1")) != null)
+				{
+					StreamElement session = packet.getFirstElement(new NSI("jingle", "urn:xmpp:jingle:1"));
+					String action = session.getAttributeValue("action");
+
+					if(action.equals("session-initate"))
+					{
+						handleInitate(packet, true);
+					}
+					else if(action.equals("transport-info"))
+					{
+						logger.debug("[[" + internalCallId + "]] Got candidate");
+						Session sess = SessionManager.findCreateSession(packet.getTo().getDomain(), packet.getFrom());
+						sess.ackIQ(packet);
+						String sessionId = session.getAttributeValue("sid");
+						CallSession cs = CallManager.getSession(sessionId);
+						for(Object objContent : session.listElements("content"))
+						{
+							StreamElement content = (StreamElement)objContent;
+							StreamElement origTransport = content.getFirstElement("transport");
+							handleTransportList(sess, origTransport, cs);
+						}	
+						
+					}
+					else if(action.equals("session-accept"))
+					{
+						logger.debug("[[" + internalCallId + "]] Got session accept");
+						Session sess = SessionManager.findCreateSession(packet.getTo().getDomain(), packet.getFrom());
+						sess.ackIQ(packet);						
+						String sessionId = session.getAttributeValue("sid");
+						CallSession cs = CallManager.getSession(sessionId);
+						if (cs != null)
+						{
+							logger.debug("[[" + internalCallId + "]] got call session : [[" + cs.internalCallId + "]]");
+							logger.debug("[[" + internalCallId + "]] Call found sending 200 OK");
+							cs.parseAccept(packet, true);
+							SipService.acceptCall(cs);
+						}
+					}
+
+				}
+
+				// gingle  call
 				else if (   packet.getAttributeValue("type").equals("set")
 				         && packet.getFirstElement(new NSI("session", "http://www.google.com/session")) != null)
 				{
 					if (packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getAttributeValue("type").equals("initiate"))
 					{
-						logger.debug("[[" + internalCallId + "]] Got a request to start a call");
-						Session sess = SessionManager.findCreateSession(packet.getTo().getDomain(), packet.getFrom());
-						sess.ackIQ(packet);
-						
-						CallSession cs = new CallSession();
-						logger.debug("[[" + internalCallId + "]] created call session : [[" + cs.internalCallId + "]]");
-						cs.parseInitiate(packet);
-						
-						CallManager.addSession(cs);
-						
-						/* For coherence, we try to use the domain he has used in his subscription */
-						String domain = host;
-
-						SipSubscription sub = SipSubscriptionManager.getWatcher(UriMappings.toSipId(cs.jabberRemote), cs.jabberLocal.getNode());
-						
-						if (sub != null)
-						{
-							domain = ((SipURI) sub.remoteParty.getURI()).getHost();
-						}
-						SipService.sendInvite(cs, domain);
+						handleInitate(packet, false);
 					}
 					else if (packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getAttributeValue("type").equals("transport-info"))
 					{
 						logger.debug("[[" + internalCallId + "]] Got transport info");
 						Session sess = SessionManager.findCreateSession(packet.getTo().getDomain(), packet.getFrom());
 						sess.ackIQ(packet);
+						StreamElement session = packet.getFirstElement(new NSI("session", "http://www.google.com/session"));
+						String sessionId = session.getID();
+						CallSession cs = CallManager.getSession(sessionId);
 						
 						StreamElement origTransport = packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getFirstElement("transport");
+						handleTransportList(sess, origTransport, cs);
 						
-						if (origTransport.getNamespaceURI().equals("http://www.google.com/transport/p2p"))
-						{
-							StreamElement candidate = origTransport.getFirstElement("candidate");
-							if (   candidate != null
-							    && candidate.getAttributeValue("protocol").equals("udp"))
-							{
-								String sessionId = packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getID();
-								
-								CallSession cs = CallManager.getSession(sessionId);
-								
-								if (cs != null)
-								{
-									logger.debug("[[" + internalCallId + "]] got call session : [[" + cs.internalCallId + "]]");
-									if (!cs.sentTransport)
-									{
-										sess.sendTransportInfo(cs);
-										cs.sentTransport = true;
-									}
-									sess.acceptTransport(packet);
-									
-									cs.relay.sendBind(candidate.getAttributeValue("username"), cs.candidateUser, candidate.getAttributeValue("address"), Integer.parseInt(candidate.getAttributeValue("port")), false);
-								}
-							}
-						}
 					}
 					else if (packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getAttributeValue("type").equals("candidates"))
 					{
@@ -677,62 +761,10 @@ class Session extends Thread implements StreamStatusListener, PacketListener
 						Session sess = SessionManager.findCreateSession(packet.getTo().getDomain(), packet.getFrom());
 						sess.ackIQ(packet);
 						
-						/*StreamElement origTransport = */packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getFirstElement("transport");
 						StreamElement session = packet.getFirstElement(new NSI("session", "http://www.google.com/session"));
-						for(Object objCandidate : session.listElements("candidate"))
-						{
-							StreamElement candidate = (StreamElement)objCandidate;
-
-							if (   candidate != null
-									&& candidate.getAttributeValue("protocol").equals("udp"))
-							{
-								String sessionId = session.getID();
-
-								CallSession cs = CallManager.getSession(sessionId);
-
-								if (cs != null)
-								{
-									logger.debug("[[" + internalCallId + "]] got call session : [[" + cs.internalCallId + "]]");
-
-									if (candidate.getAttributeValue("name").equals("video_rtp")/* || candidate.getAttributeValue("name").equals("video_rtcp")*/)
-									{
-										if (!cs.sentVTransport)
-										{
-											sess.sendTransportCandidates(cs, StreamType.VRTP);
-										}
-
-										cs.vRelay.sendBind(candidate.getAttributeValue("username"), cs.candidateVUser, candidate.getAttributeValue("address"), Integer.parseInt(candidate.getAttributeValue("port")), false);
-									}
-									else if (candidate.getAttributeValue("name").equals("video_rtcp"))
-									{
-										if (!cs.sentVTransport)
-										{
-											sess.sendTransportCandidates(cs, StreamType.VRTCP);
-										}
-
-										cs.vRelay.sendBind(candidate.getAttributeValue("username"), cs.candidateVUser, candidate.getAttributeValue("address"), Integer.parseInt(candidate.getAttributeValue("port")), true);
-									}
-									else if (candidate.getAttributeValue("name").equals("rtp")/* || candidate.getAttributeValue("name").equals("rtcp")*/)
-									{
-										if (!cs.sentTransport)
-										{
-											sess.sendTransportCandidates(cs, StreamType.RTP);
-										}
-
-										cs.relay.sendBind(candidate.getAttributeValue("username"), cs.candidateUser, candidate.getAttributeValue("address"), Integer.parseInt(candidate.getAttributeValue("port")), false);
-									}
-									else if (candidate.getAttributeValue("name").equals("rtcp"))
-									{
-										if (!cs.sentTransport)
-										{
-											sess.sendTransportCandidates(cs, StreamType.RTCP);										
-										}
-
-										cs.relay.sendBind(candidate.getAttributeValue("username"), cs.candidateUser, candidate.getAttributeValue("address"), Integer.parseInt(candidate.getAttributeValue("port")), true);
-									}
-								}
-							}
-						}
+						String sessionId = session.getID();
+						CallSession cs = CallManager.getSession(sessionId);
+						handleTransportList(sess, session,cs);
 					}
 					else if (packet.getFirstElement(new NSI("session", "http://www.google.com/session")).getAttributeValue("type").equals("transport-accept"))
 					{
@@ -750,7 +782,7 @@ class Session extends Thread implements StreamStatusListener, PacketListener
 						{
 							logger.debug("[[" + internalCallId + "]] got call session : [[" + cs.internalCallId + "]]");
 							logger.debug("[[" + internalCallId + "]] Call found sending 200 OK");
-							cs.parseAccept(packet);
+							cs.parseAccept(packet, false);
 							SipService.acceptCall(cs);
 						}
 					}
