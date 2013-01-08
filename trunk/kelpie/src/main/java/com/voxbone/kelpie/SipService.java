@@ -227,7 +227,33 @@ public class SipService
 		
 		return true;
 	}
-	
+
+	public static boolean sendDTMFinfo(CallSession cs, char dtmf, int duration)
+	{
+		Request req;
+		try
+		{
+			logger.debug("Sending SIP INFO DTMF - Signal: " + dtmf + " Duration:" + duration);
+			ContentTypeHeader cth = headerFactory.createContentTypeHeader("application", "dtmf-relay");
+			String body =   "Signal=" + dtmf + "\r\nDuration="+duration;
+
+			req = cs.sipDialog.createRequest(Request.INFO);
+			ClientTransaction t = sipProvider.getNewClientTransaction(req);
+			req.setContent(body, cth);
+			cs.sipDialog.sendRequest(t);
+		}
+		catch (SipException e)
+		{
+			logger.error("Error sending DTMF INFO", e);
+		}
+		catch (ParseException e)
+		{
+			logger.error("Error sending DTMF INFO", e);
+		}
+
+		return true;
+	}
+
 	public static boolean sendVideoUpdate(CallSession cs)
 	{
 		Request req;

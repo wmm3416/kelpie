@@ -85,6 +85,8 @@ class Session extends Thread implements StreamStatusListener, PacketListener
 	private static int iconSize;
 
 	static Logger logger = Logger.getLogger(Session.class);
+	private static boolean useDtmfInfo = false;
+	private static int dtmfDuration;
 
 	public String internalCallId;
 
@@ -148,6 +150,9 @@ class Session extends Thread implements StreamStatusListener, PacketListener
 		clientName = "http://" + properties.getProperty("com.voxbone.kelpie.hostname", "kelpie.voxbone.com") + "/caps";
 		clientVersion = "0.2";
 		fakeId = properties.getProperty("com.voxbone.kelpie.service_name", "kelpie");
+		useDtmfInfo = Boolean.parseBoolean(properties.getProperty("com.voxbone.kelpie.feature.dtmf-info", "false"));
+		dtmfDuration = Integer.parseInt(properties.getProperty("com.voxbone.kelpie.feature.dtmf-duration", "160"));
+
 	}
 	
 	private long idNum = 0;
@@ -420,7 +425,14 @@ class Session extends Thread implements StreamStatusListener, PacketListener
 							logger.debug("[[" + internalCallId + "]] Call found, sending dtmfs");
 							for (int i = "/dial:".length(); i < msg.length(); i++)
 							{
-								cs.relay.sendSipDTMF(msg.charAt(i));
+								if(useDtmfInfo)
+								{
+									SipService.sendDTMFinfo(cs, msg.charAt(i), dtmfDuration);
+								}
+								else
+								{
+									cs.relay.sendSipDTMF(msg.charAt(i));
+								}
 							}
 						}
 					}
