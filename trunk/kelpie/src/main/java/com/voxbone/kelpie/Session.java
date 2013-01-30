@@ -1042,12 +1042,17 @@ class Session extends Thread implements StreamStatusListener, PacketListener
 					
 					jin_payload_type.setAttributeValue("id", Integer.toString(payload.id));
 					jin_payload_type.setAttributeValue("name", payload.name);
-					
+									
 					StreamElement jin_payload_video = jin_payload_type.addElement("parameter");
+					jin_payload_video.setAttributeValue("name", "width");					
+					jin_payload_video.setAttributeValue("value", Integer.toString(payload.width));
 					
-					jin_payload_video.setAttributeValue("width", Integer.toString(payload.width));
-					jin_payload_video.setAttributeValue("height", Integer.toString(payload.height));
-					jin_payload_video.setAttributeValue("framerate", Integer.toString(payload.framerate));
+					jin_payload_video = jin_payload_type.addElement("parameter");
+					jin_payload_video.setAttributeValue("name", "height");
+					jin_payload_video.setAttributeValue("value", Integer.toString(payload.height));
+					jin_payload_video = jin_payload_type.addElement("parameter");
+					jin_payload_video.setAttributeValue("name", "framerate");
+					jin_payload_video.setAttributeValue("value", Integer.toString(payload.framerate));
 				}
 				
 			}
@@ -1472,13 +1477,17 @@ class Session extends Thread implements StreamStatusListener, PacketListener
 					StreamElement jin_payload_type = jin_vdescription.addElement("payload-type");
 					
 					jin_payload_type.setAttributeValue("id", Integer.toString(payload.id));
-					jin_payload_type.setAttributeValue("name", payload.name);
-					
+					jin_payload_type.setAttributeValue("name", payload.name);					
 					StreamElement jin_payload_video = jin_payload_type.addElement("parameter");
+					jin_payload_video.setAttributeValue("name", "width");					
+					jin_payload_video.setAttributeValue("value", Integer.toString(payload.width));
 					
-					jin_payload_video.setAttributeValue("width", Integer.toString(payload.width));
-					jin_payload_video.setAttributeValue("height", Integer.toString(payload.height));
-					jin_payload_video.setAttributeValue("framerate", Integer.toString(payload.framerate));
+					jin_payload_video = jin_payload_type.addElement("parameter");
+					jin_payload_video.setAttributeValue("name", "height");
+					jin_payload_video.setAttributeValue("value", Integer.toString(payload.height));
+					jin_payload_video = jin_payload_type.addElement("parameter");
+					jin_payload_video.setAttributeValue("name", "framerate");
+					jin_payload_video.setAttributeValue("value", Integer.toString(payload.framerate));
 				}
 				
 			}
