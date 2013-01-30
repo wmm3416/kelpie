@@ -201,22 +201,200 @@ public class CallSession
 		return null;		
 	}
 	
-	public void parseInitiate(Packet p)
+	public void parseInitiate(Packet p, boolean jingle)
 	{
-		StreamElement session = p.getFirstElement(new NSI("session", "http://www.google.com/session"));
-		
-		jabberSessionId = session.getID();
-		jabberRemote = p.getFrom();
-		jabberLocal = p.getTo();
-		jabberInitiator = session.getAttributeValue("initiator");	
-		
-		parseSession(session, true);
+		if(!jingle)
+		{
+			StreamElement session = p.getFirstElement(new NSI("session", "http://www.google.com/session"));
+			
+			jabberSessionId = session.getID();
+			jabberRemote = p.getFrom();
+			jabberLocal = p.getTo();
+			jabberInitiator = session.getAttributeValue("initiator");	
+			
+			parseSession(session, true);
+		}
+		else
+		{
+			StreamElement session = p.getFirstElement("jingle");
+			
+			jabberSessionId = session.getAttributeValue("sid");
+			jabberRemote = p.getFrom();
+			jabberLocal = p.getTo();
+			jabberInitiator = session.getAttributeValue("initiator");	
+			
+			parseJingleSession(session, true);
+		}
 	}
 	
-	public void parseAccept(Packet p)
+	public void parseAccept(Packet p, boolean jingle)
 	{
-		StreamElement session = p.getFirstElement();
-		parseSession(session, false);
+		if(jingle)
+		{
+			StreamElement session = p.getFirstElement("jingle");
+			parseJingleSession(session, false);
+		}
+		else
+		{
+			StreamElement session = p.getFirstElement(new NSI("session", "http://www.google.com/session"));
+			parseSession(session, false);
+		}
+
+	}
+
+
+	private void parseJingleSession(StreamElement session, boolean offer)
+	{
+		// StreamElement content = session.getFirstElement("content");
+		for(Object contObj : session.listElements("content"))
+		{
+			// loop content
+			StreamElement content = (StreamElement) contObj;
+			for(Object descObj : content.listElements("description"))
+			{
+				StreamElement desc = (StreamElement) descObj;
+				boolean video = false;
+				
+				// Parse Video Description
+				if(	desc.getAttributeValue("media") != null 
+					&& desc.getAttributeValue("media").equals("video") )
+				{
+					video = true;
+					logger.info("[[" + internalCallId + "]] Video call detected, enabling video rtp stream");
+					if (vRelay == null)
+					{
+						try
+						{
+							vRelay = new RtpRelay(this, true);
+						} 
+						catch (IOException e)
+						{
+							logger.error("Can't setup video rtp relay", e);
+						}
+					}
+					
+					for (Object opt : desc.listElements("payload-type"))
+					{
+						StreamElement pt = (StreamElement) opt;
+						try
+						{
+							int id = Integer.parseInt(pt.getAttributeValue("id"));
+							String name = pt.getAttributeValue("name");
+							logger.debug("[[" + internalCallId + "]] found payload: " + name );
+							
+							int framerate = 0;
+							int width = 0;
+							int height = 0;
+							
+							for (Object vparamObj : desc.listElements("parameter"))
+							{
+								StreamElement vparams = (StreamElement) vparamObj;
+								
+								if (vparams.getAttributeValue("framerate") != null) {
+									framerate = Integer.parseInt(vparams.getAttributeValue("framerate"));
+								}
+								if (vparams.getAttributeValue("width") != null) {
+									width = Integer.parseInt(vparams.getAttributeValue("width"));
+								}
+								if (vparams.getAttributeValue("height") != null) {
+									height = Integer.parseInt(vparams.getAttributeValue("height"));
+								}
+								
+							}
+
+								// add video payload
+								Payload p = getByName(name);
+								if (p != null && p instanceof VPayload)
+								{
+									VPayload tmp = (VPayload) p;
+									VPayload vp = null;
+									// save the rtp map id, but load in our offical config....
+									if (framerate != 0 && width != 0 && height != 0) {
+										vp = new VPayload(id, name, tmp.clockRate, tmp.bitRate, width, height, framerate);
+									} else {
+										vp = new VPayload(id, tmp.name, tmp.clockRate, tmp.bitRate, tmp.width, tmp.height, tmp.framerate);
+									}
+									
+									if (offer)
+									{
+										offerVPayloads.add(vp);
+									}
+									else
+									{
+										answerVPayloads.add(vp);
+									}
+								}
+							
+						}
+						catch (NumberFormatException e) 
+						{
+							// ignore tags we don't understand (but write full log, in case we need to investigate)
+							logger.warn("[[" + internalCallId + "]] failed to parse tag in session : ", e);
+							logger.debug("[[" + internalCallId + "]] NumberFormatException -> session contents : " + session.toString());
+							logger.debug("[[" + internalCallId + "]] NumberFormatException -> description item contents : " + pt.toString());
+						}
+					}
+					
+				// Parse Audio Description
+				} else if (	desc.getAttributeValue("media") != null 
+						&& desc.getAttributeValue("media").equals("audio") )
+					{
+						logger.info("[[" + internalCallId + "]] Audio call detected");
+						for (Object opt : desc.listElements("payload-type"))
+						{
+							StreamElement pt = (StreamElement) opt;
+							try
+							{
+								int id = Integer.parseInt(pt.getAttributeValue("id"));
+								String name = pt.getAttributeValue("name");
+								logger.debug("[[" + internalCallId + "]] found payload: " + name );
+								
+								int clockrate = 0;
+								if (pt.getAttributeValue("clockrate") != null) {
+									clockrate = Integer.parseInt(pt.getAttributeValue("clockrate"));
+								}
+				
+								int bitrate = 0;
+								if (pt.getAttributeValue("bitrate") != null)
+								{
+									bitrate = Integer.parseInt(pt.getAttributeValue("bitrate"));
+								}
+
+									// add audio payload
+									Payload payload = new Payload(id, name, clockrate, bitrate);
+					
+									if (isSupportedPayload(payload))
+									{
+										if (offer)
+										{
+											offerPayloads.add(payload);
+										}
+										else
+										{
+											answerPayloads.add(payload);
+										}
+									}
+
+							}
+							catch (NumberFormatException e) 
+							{
+								// ignore tags we don't understand (but write full log, in case we need to investigate)
+								logger.warn("[[" + internalCallId + "]] failed to parse tag in session : ", e);
+								logger.debug("[[" + internalCallId + "]] NumberFormatException -> session contents : " + session.toString());
+								logger.debug("[[" + internalCallId + "]] NumberFormatException -> description item contents : " + pt.toString());
+							}
+						}
+						
+					} 
+				
+
+
+			}
+		}
+		
+
+
+
 	}
 
 	private void parseSession(StreamElement session, boolean offer)
